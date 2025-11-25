@@ -135,4 +135,4 @@ Feel free to fork, improve, and submit pull requests!
 ```
 
 ## Author
-Nina Dragicevic
+Nina Dragićević
