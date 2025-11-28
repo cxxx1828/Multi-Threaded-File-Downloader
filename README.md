@@ -77,6 +77,8 @@ Result:
 Single thread: ~1000 seconds (16.6 min)
 16 threads: ~65 seconds → 15.4× speedup! (even with bandwidth cap)
 Live demo showing progress bars and speed
+
+
 Project Structure
 textparallel-downloader/
 ├── client.c          → Smart multithreaded downloader with progress
@@ -86,26 +88,35 @@ textparallel-downloader/
 ├── downloaded.txt    → Output file (auto-generated)
 ├── Makefile          → Build both with `make`
 └── README.md         → This file
+
+
 Build
 Bashmake              # Builds client and server
 make clean        # Remove binaries
 Requirements: gcc, make, pthread (standard on Linux/macOS/WSL)
+
+
 Usage
 Start the Server
 Bash./server <port> <bandwidth_KBps>
 ./server 27015 1024        # 1 MB/s total (shared fairly)
 ./server 27015 0           # Unlimited speed
 ./server 27015 50          # Simulate slow link (~50 KB/s)
+
+
 Download with Client
 Option 1: Auto-split into N equal parts (recommended)
 Bash./client <ip> <port> <filename> <threads> [output]
 
 # Download in 10 parallel segments
 ./client 127.0.0.1 27015 ubuntu.iso 10 ubuntu_fast.iso
+
 Option 2: Interactive mode (advanced)
 Bash./client-interactive <ip> <port> <filename> <output>
 # Then manually enter segment sizes (great for resuming!)
 # Example: skip damaged parts, download only specific ranges
+
+
 How It Works
 Custom Lightweight Protocol (Binary-Efficient)
 Client sends (in order):
@@ -113,6 +124,8 @@ text[int32] segment_id
 [int64] offset
 [int32] length
 Server responds with raw binary data — no headers, no waste.
+
+
 Token Bucket Rate Limiter (Server)
 Cstatic pthread_mutex_t bucket_mutex = PTHREAD_MUTEX_INITIALIZER;
 static long long tokens = MAX_TOKENS;
@@ -126,11 +139,18 @@ void throttle(int bytes) {
     tokens -= bytes;
 }
 → Smooth, accurate, and fair bandwidth sharing across all clients.
+
+
 Performance Comparison (500 MB file)
 
+Threads,Time,Effective Speed,Speedup
+1,1000 s,500 KB/s,1.0×
+4,255 s,1.96 MB/s,3.9×
+8,135 s,3.7 MB/s,7.4×
+16,98 s,5.1 MB/s,10.2×
+32,92 s,5.4 MB/s,10.9×
 
-ThreadsTimeEffective SpeedSpeedup11000 s500 KB/s1.0×4255 s1.96 MB/s3.9×8135 s3.7 MB/s7.4×1698 s5.1 MB/s10.2×3292 s5.4 MB/s10.9×
-Note: With bandwidth=0 (unlimited), 32 threads can saturate 10 Gbps+ links!
+
 Future Enhancements (Contribute!)
 
  Resume support with .part metadata
@@ -140,6 +160,8 @@ Future Enhancements (Contribute!)
  Peer-to-peer swarm mode
  ncurses TUI with live graph
  Config file + daemon mode
+
+
 
 Educational Value
 This project is used in university courses on:
