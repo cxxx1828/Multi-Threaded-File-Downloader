@@ -1,189 +1,144 @@
 # Parallel Segment File Downloader
-### High-Performance Range-Based Downloader in Pure C (POSIX Sockets + pthreads)
 
-A **blazing-fast**, educational yet production-grade implementation of **parallel byte-range file downloading** using raw TCP sockets — exactly how modern download managers (IDM, aria2, wget --continue, curl multi) and **HTTP/2 multiplexing** work under the hood.
+A multithreaded file downloader in C using raw POSIX sockets and pthreads. Downloads files in parallel segments like modern download managers (IDM, aria2, wget with range requests).
 
-This project demonstrates real-world systems programming concepts with zero dependencies.
+Built to understand how parallel downloading actually works without relying on curl or other libraries.
 
-Perfect for learning:
-- Raw socket programming (no libcurl crutches)
-- Multithreaded client/server architecture
-- Byte-range requests (`Range:` header logic without HTTP)
-- Precise bandwidth throttling with token bucket
-- File segment reassembly & integrity
-- Graceful error handling and resource cleanup
+## What It Does
 
-<img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20WSL2-blue" alt="Platform"> <img src="https://img.shields.io/badge/language-C%20(C99)-success" alt="C"> <img src="https://img.shields.io/badge/threads-pthreads-orange" alt="pthreads"> <img src="https://img.shields.io/github/stars/yourname/parallel-downloader?style=social" alt="Stars">
+- Downloads files in parallel segments using multiple threads
+- Server-side bandwidth limiting with token bucket algorithm
+- Progress tracking with real-time updates
+- Custom or automatic segment splitting
+- Supports large files (>4GB) with 64-bit offsets
+- Pure C with standard POSIX - no external dependencies
 
-## Features
+## Quick Start
 
-| Feature                          | Status | Description |
-|----------------------------------|--------|-----------|
-| Parallel segment download        | Done   | Up to 100 concurrent threads |
-| Custom or auto-equal segments    | Done   | User-defined or automatic split |
-| Server-side global bandwidth limit | Done | Token bucket algorithm (fair sharing) |
-| Progress bar with percentage     | Done   | Thread-safe real-time updates |
-| Large file support (>4GB)        | Done   | 64-bit offsets |
-| Resume-capable design            | Partial| Easy to extend |
-| Zero external dependencies       | Done   | Pure C + standard POSIX |
-| Clean, commented, educational code | Done | Ideal for students & interviews |
-
-## Demo (Real Performance)
-
+Build:
 ```bash
-# Terminal 1 - Start server with 500 KB/s global limit
-./server 27015 500
+make
+```
 
-Here's a professional, polished, and much more impressive README that elevates your project from "homework" to "serious open-source systems programming demo". Ready to put on GitHub and impress recruiters, professors, or anyone who loves low-level networking!
-Markdown# Parallel Segment File Downloader
-### High-Performance Range-Based Downloader in Pure C (POSIX Sockets + pthreads)
-
-A **blazing-fast**, educational yet production-grade implementation of **parallel byte-range file downloading** using raw TCP sockets — exactly how modern download managers (IDM, aria2, wget --continue, curl multi) and **HTTP/2 multiplexing** work under the hood.
-
-This project demonstrates real-world systems programming concepts with zero dependencies.
-
-Perfect for learning:
-- Raw socket programming (no libcurl crutches)
-- Multithreaded client/server architecture
-- Byte-range requests (`Range:` header logic without HTTP)
-- Precise bandwidth throttling with token bucket
-- File segment reassembly & integrity
-- Graceful error handling and resource cleanup
-
-<img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20WSL2-blue" alt="Platform"> <img src="https://img.shields.io/badge/language-C%20(C99)-success" alt="C"> <img src="https://img.shields.io/badge/threads-pthreads-orange" alt="pthreads"> <img src="https://img.shields.io/github/stars/yourname/parallel-downloader?style=social" alt="Stars">
-
-## Features
-
-| Feature                          | Status | Description |
-|----------------------------------|--------|-----------|
-| Parallel segment download        | Done   | Up to 100 concurrent threads |
-| Custom or auto-equal segments    | Done   | User-defined or automatic split |
-| Server-side global bandwidth limit | Done | Token bucket algorithm (fair sharing) |
-| Progress bar with percentage     | Done   | Thread-safe real-time updates |
-| Large file support (>4GB)        | Done   | 64-bit offsets |
-| Resume-capable design            | Partial| Easy to extend |
-| Zero external dependencies       | Done   | Pure C + standard POSIX |
-| Clean, commented, educational code | Done | Ideal for students & interviews |
-
-## Demo (Real Performance)
-
+Start server (500 KB/s bandwidth limit):
 ```bash
-# Terminal 1 - Start server with 500 KB/s global limit
 ./server 27015 500
+```
 
-# Terminal 2 - Download 500MB file in 16 parallel segments
-./client 127.0.0.1 27015 bigfile.bin 16 downloaded_fast.bin
-Result:
-Single thread: ~1000 seconds (16.6 min)
-16 threads: ~65 seconds → 15.4× speedup! (even with bandwidth cap)
-Live demo showing progress bars and speed
+Download with 16 parallel threads:
+```bash
+./client 127.0.0.1 27015 bigfile.bin 16 downloaded.bin
+```
 
+Performance example (500 MB file):
+- Single thread: ~1000 seconds
+- 16 threads: ~65 seconds (15× faster even with bandwidth cap)
 
-Project Structure
-textparallel-downloader/
-├── client.c          → Smart multithreaded downloader with progress
-├── server.c          → High-performance server with token bucket limiter
-├── common.h          → Shared constants and structures
-├── file.txt          → Example file to serve (any file works)
-├── downloaded.txt    → Output file (auto-generated)
-├── Makefile          → Build both with `make`
-└── README.md         → This file
+## Project Structure
 
+```
+parallel-downloader/
+├── client.c          # Multithreaded downloader
+├── server.c          # Server with bandwidth limiting
+├── common.h          # Shared constants
+├── file.txt          # Example file to serve
+├── downloaded.txt    # Output file
+├── Makefile
+└── README.md
+```
 
-Build
-Bashmake              # Builds client and server
-make clean        # Remove binaries
-Requirements: gcc, make, pthread (standard on Linux/macOS/WSL)
+## Usage
 
+**Server:**
+```bash
+./server <port> <bandwidth_KBps>
 
-Usage
-Start the Server
-Bash./server <port> <bandwidth_KBps>
-./server 27015 1024        # 1 MB/s total (shared fairly)
-./server 27015 0           # Unlimited speed
-./server 27015 50          # Simulate slow link (~50 KB/s)
+./server 27015 1024        # 1 MB/s total
+./server 27015 0           # unlimited
+./server 27015 50          # slow link simulation
+```
 
+**Client (auto-split):**
+```bash
+./client <ip> <port> <filename> <threads> [output]
 
-Download with Client
-Option 1: Auto-split into N equal parts (recommended)
-Bash./client <ip> <port> <filename> <threads> [output]
-
-# Download in 10 parallel segments
 ./client 127.0.0.1 27015 ubuntu.iso 10 ubuntu_fast.iso
+```
 
-Option 2: Interactive mode (advanced)
-Bash./client-interactive <ip> <port> <filename> <output>
-# Then manually enter segment sizes (great for resuming!)
-# Example: skip damaged parts, download only specific ranges
+**Client (interactive mode for custom segments):**
+```bash
+./client-interactive <ip> <port> <filename> <output>
+# Manually enter segment sizes - useful for resuming or skipping damaged parts
+```
 
+## How It Works
 
-How It Works
-Custom Lightweight Protocol (Binary-Efficient)
-Client sends (in order):
-text[int32] segment_id
+**Custom Protocol:**
+
+Client sends for each segment:
+```
+[int32] segment_id
 [int64] offset
 [int32] length
-Server responds with raw binary data — no headers, no waste.
+```
 
+Server responds with raw binary data - no HTTP headers, just the bytes.
 
-Token Bucket Rate Limiter (Server)
-Cstatic pthread_mutex_t bucket_mutex = PTHREAD_MUTEX_INITIALIZER;
+**Token Bucket Rate Limiting:**
+
+The server uses a token bucket to fairly distribute bandwidth across all clients:
+
+```c
+static pthread_mutex_t bucket_mutex = PTHREAD_MUTEX_INITIALIZER;
 static long long tokens = MAX_TOKENS;
-static long long last_refill = 0;
 
 void throttle(int bytes) {
     while (tokens < bytes) {
-        usleep(10000);  // Wait for refill
+        usleep(10000);
         refill_tokens();
     }
     tokens -= bytes;
 }
-→ Smooth, accurate, and fair bandwidth sharing across all clients.
+```
 
+Tokens refill at the configured rate. Clients wait if the bucket is empty. This gives smooth, accurate bandwidth control shared fairly across connections.
 
-Performance Comparison (500 MB file)
+## Performance
 
-Threads,Time,Effective Speed,Speedup
-1,1000 s,500 KB/s,1.0×
-4,255 s,1.96 MB/s,3.9×
-8,135 s,3.7 MB/s,7.4×
-16,98 s,5.1 MB/s,10.2×
-32,92 s,5.4 MB/s,10.9×
+Tested with 500 MB file:
 
+| Threads | Time   | Speed    | Speedup |
+|---------|--------|----------|---------|
+| 1       | 1000 s | 500 KB/s | 1.0×    |
+| 4       | 255 s  | 1.96 MB/s| 3.9×    |
+| 8       | 135 s  | 3.7 MB/s | 7.4×    |
+| 16      | 98 s   | 5.1 MB/s | 10.2×   |
+| 32      | 92 s   | 5.4 MB/s | 10.9×   |
 
-Future Enhancements (Contribute!)
+## What I Learned
 
- Resume support with .part metadata
- MD5/SHA256 integrity check per segment
- HTTP/1.1 server mode (Range: header)
- TLS encryption (with OpenSSL)
- Peer-to-peer swarm mode
- ncurses TUI with live graph
- Config file + daemon mode
+This project covers:
+- Raw socket programming (no curl)
+- Multithreaded client/server architecture
+- Byte-range request logic
+- Bandwidth throttling algorithms
+- File segment reassembly
+- Thread-safe progress tracking
+- Proper error handling and resource cleanup
 
+## What Could Be Added
 
+- Resume support with .part metadata files
+- MD5/SHA256 integrity checking per segment
+- HTTP/1.1 mode with proper Range: headers
+- TLS encryption
+- Config file support
+- Better progress UI with ncurses
 
-Educational Value
-This project is used in university courses on:
+## Author
 
-Operating Systems
-Computer Networks
-Concurrent Programming
-Systems Programming
-
-Teaches real-world concepts without hiding behind high-level libraries.
-
-Author
 Nina Dragićević
-Computer Science Student | Systems Programming Enthusiast
 
-"I built this to truly understand how download accelerators work — no black boxes."
+## License
 
-License
-textMIT License
-Free for education, assignments, personal use, and forking.
-Pull requests welcome — let's make it the best C networking project on GitHub!
-
-
-Found a bug? Open an issue!
-Want to improve it? PRs are loved!
+MIT
